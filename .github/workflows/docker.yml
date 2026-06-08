@@ -7,15 +7,15 @@ on:
   workflow_dispatch:        # manuell auslösen möglich
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}   # → ghcr.io/nicolasasauer/belegscanner-web
+  # Hardcoded mit Bindestrich — muss mit docker-compose.yml übereinstimmen
+  IMAGE: ghcr.io/nicolasasauer/belegscanner-web
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write        # für GHCR-Push
+      packages: write
 
     steps:
       - name: Checkout
@@ -30,22 +30,20 @@ jobs:
       - name: Bei GHCR anmelden
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          # Nutzt GHCR_TOKEN (PAT) wenn vorhanden, sonst GITHUB_TOKEN als Fallback
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Image-Tags & Labels berechnen
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE }}
           tags: |
-            # :latest bei push auf main
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            # :v1.2.3 bei Git-Tags
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            # :sha-abc1234 immer
             type=sha,prefix=sha-
 
       - name: Build & Push (amd64 + arm64)
@@ -53,8 +51,8 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/amd64,linux/arm64    # ← Raspberry Pi 4/5 + normaler Server
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha                  # GitHub Actions Cache
+          cache-from: type=gha
           cache-to: type=gha,mode=max
