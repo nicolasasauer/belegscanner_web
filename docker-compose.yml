@@ -10,12 +10,9 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
-    env_file:
-      - .env.docker
-    environment:
-      NODE_ENV: production
-      # Falls Ollama-Profil aktiv ist, zeigt die App automatisch auf den Container
-      AI_BASE_URL: ${AI_BASE_URL:-http://ollama:11434}
+    volumes:
+      # Config + Daten persistent speichern (Supabase-Credentials, AI-Einstellungen)
+      - ./data:/app/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
       interval: 30s
@@ -26,7 +23,8 @@ services:
       - belegscanner
 
   # ── Ollama (lokale KI) ─────────────────────────────────────────────────────────
-  # Starten mit: docker compose --profile ai up
+  # Starten mit: docker compose --profile ai up -d
+  # Modell laden: docker exec belegscanner-ollama ollama pull llava
   ollama:
     image: ollama/ollama:latest
     container_name: belegscanner-ollama
@@ -45,12 +43,6 @@ services:
       start_period: 60s
     networks:
       - belegscanner
-    # Für Raspberry Pi mit GPU-Support auskommentieren:
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
 
 volumes:
   ollama_data:

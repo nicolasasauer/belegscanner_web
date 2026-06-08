@@ -33,6 +33,9 @@ __tests__
 DEPLOY.md
 scripts/
 
+# Runtime data (wird als Volume gemountet, nicht in Image kopieren)
+data/
+
 # Supabase local dev
 supabase/.branches
 supabase/.temp

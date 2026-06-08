@@ -15,14 +15,22 @@ const PROVIDER_DEFAULTS: Record<AiProviderType, { model: string; baseUrl: string
   gemini:   { model: 'gemini-1.5-flash',         baseUrl: 'https://generativelanguage.googleapis.com' },
 }
 
-export function getAiConfig(): AiConfig {
-  const provider = (process.env.AI_PROVIDER ?? 'ollama') as AiProviderType
+/**
+ * Liest AI-Config aus Runtime-Config (Docker: /app/data/config.json),
+ * fällt auf Env-Vars zurück (lokale Entwicklung).
+ */
+export async function getAiConfig(): Promise<AiConfig> {
+  // Dynamischer Import vermeidet Edge-Runtime-Fehler (ai.ts läuft nur server-side)
+  const { getRuntimeConfig } = await import('@/lib/config/runtime')
+  const cfg = await getRuntimeConfig()
+
+  const provider = (cfg.aiProvider || process.env.AI_PROVIDER || 'ollama') as AiProviderType
   const defaults = PROVIDER_DEFAULTS[provider] ?? PROVIDER_DEFAULTS.ollama
   return {
     provider,
-    model:   process.env.AI_MODEL   ?? defaults.model,
-    baseUrl: process.env.AI_BASE_URL ?? defaults.baseUrl,
-    apiKey:  process.env.AI_API_KEY  ?? '',
+    model:   cfg.aiModel   || process.env.AI_MODEL   || defaults.model,
+    baseUrl: cfg.aiBaseUrl || process.env.AI_BASE_URL || defaults.baseUrl,
+    apiKey:  cfg.aiApiKey  || process.env.AI_API_KEY  || '',
   }
 }
 
@@ -31,7 +39,7 @@ export async function callAi(
   imageBase64?: string,
   mimeType?: string,
 ): Promise<string> {
-  const config = getAiConfig()
+  const config = await getAiConfig()
   switch (config.provider) {
     case 'ollama':   return callOllama(config, prompt, imageBase64)
     case 'lmstudio': return callOpenAiCompat(config, prompt, imageBase64, mimeType)

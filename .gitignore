@@ -28,6 +28,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Docker runtime data (enthält Supabase-Credentials — nie committen!)
+/data/
+
+# Docker env files
+.env.docker
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

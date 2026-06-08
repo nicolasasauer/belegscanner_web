@@ -2,109 +2,75 @@
 
 ## Voraussetzungen
 
-- Raspberry Pi 4 oder 5 (4GB RAM empfohlen)
+- Raspberry Pi 4 oder 5 (4 GB RAM empfohlen)
 - Raspberry Pi OS **64-bit** (Bookworm)
-- Supabase-Projekt (kostenlos unter [supabase.com](https://supabase.com))
+- Supabase-Konto (kostenlos unter [supabase.com](https://supabase.com))
 
 ---
 
-## Schnellstart — 3 Befehle
+## Schnellstart — 2 Befehle
 
 ```bash
-# 1. Repository klonen
-git clone https://github.com/DEIN-USER/belegscanner-web.git
-cd belegscanner-web
+# 1. docker-compose.yml herunterladen
+curl -fsSL https://raw.githubusercontent.com/nicolasasauer/belegscanner-web/main/docker-compose.yml -o docker-compose.yml
 
-# 2. Setup-Script ausführen (Docker + Tailscale)
-chmod +x scripts/setup-pi.sh && ./scripts/setup-pi.sh
-
-# 3. Starten
-make up
+# 2. Starten
+docker compose up -d
 ```
 
-Fertig. App läuft auf `http://RASPBERRY-PI-IP:3000`.
+Dann **http://RASPBERRY-PI-IP:3000** öffnen → Setup-Wizard erscheint automatisch.
 
 ---
 
-## Schritt für Schritt
+## Setup-Wizard (Web UI)
 
-### 1. Supabase-Werte holen
+Beim ersten Start wird der Setup-Wizard angezeigt:
 
-1. Öffne [supabase.com/dashboard](https://supabase.com/dashboard)
-2. Wähle dein Projekt → **Project Settings** → **API**
-3. Kopiere:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+1. **Supabase URL** + **Anon Key** eingeben
+   → Werte im [Supabase Dashboard](https://supabase.com/dashboard) → Project Settings → API
+2. **KI-Provider** wählen (optional, für automatische Belegscan-Erkennung)
+3. „Einrichtung abschließen" klicken
 
-### 2. .env.docker befüllen
-
-```bash
-cp .env.docker.example .env.docker
-nano .env.docker
-```
-
-Mindestens diese zwei Zeilen ausfüllen:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://DEIN-PROJEKT.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=dein-anon-key
-```
-
-### 3. App starten
-
-```bash
-make up        # Nur die Web-App
-make up-ai     # Web-App + Ollama (lokale KI)
-```
+Die Einstellungen werden in `./data/config.json` gespeichert und überleben Container-Neustarts.
 
 ---
 
 ## Mit Ollama (lokale KI, keine Cloud nötig)
 
-Ollama läuft als eigener Container. Die Modelle werden einmalig geladen (~4 GB).
-
 ```bash
-# 1. Mit Ollama-Profil starten
-make up-ai
+# Mit Ollama-Container starten
+docker compose --profile ai up -d
 
-# 2. Modell laden (einmalig, läuft im Hintergrund)
-make pull-llava
-
-# 3. In .env.docker einstellen
-AI_PROVIDER=ollama
-AI_MODEL=llava
-AI_BASE_URL=http://ollama:11434
+# Einmalig das llava-Modell laden (~4 GB)
+docker exec belegscanner-ollama ollama pull llava
 ```
 
-**Empfohlene Modelle für den Raspberry Pi:**
+Im Setup-Wizard dann:
+- **Anbieter**: Ollama
+- **Modell**: `llava`
+- **URL**: `http://ollama:11434`
 
-| Modell | Größe | Geschwindigkeit | Qualität |
-|--------|-------|-----------------|---------|
-| `llava:7b` | 4 GB | schnell | gut |
-| `llava:13b` | 8 GB | langsam | besser |
-| `moondream` | 1.7 GB | sehr schnell | ausreichend |
+**Empfohlene Modelle:**
 
-```bash
-# Modell wechseln
-make pull-model MODEL=moondream
-```
+| Modell | Größe | Geschwindigkeit |
+|--------|-------|-----------------|
+| `llava:7b` | 4 GB | gut |
+| `moondream` | 1.7 GB | sehr schnell |
 
 ---
 
-## Mit Tailscale (sicherer Fernzugriff)
-
-Tailscale gibt dem Pi eine feste IP-Adresse, die du von überall erreichst.
+## Mit Tailscale (sicherer Fernzugriff von überall)
 
 ```bash
-# Installation (wird auch vom setup-pi.sh angeboten)
+# Tailscale auf dem Pi installieren
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
 
-# Deine Tailscale-IP herausfinden
+# Deine Tailscale-IP
 tailscale ip -4
 ```
 
-Dann ist die App erreichbar unter `http://100.x.x.x:3000` — von überall auf der Welt, solange Tailscale läuft.
+App dann erreichbar unter `http://100.x.x.x:3000` — von jedem Gerät im Tailscale-Netzwerk.
 
 ---
 
@@ -115,58 +81,54 @@ make up           # Starten (ohne Ollama)
 make up-ai        # Starten (mit Ollama)
 make down         # Stoppen
 make restart      # Nur Web-App neu starten
-make logs         # Live-Logs der App
-make logs-all     # Logs aller Services
+make logs         # Live-Logs
+make update       # Neuestes Image holen und neu starten
+make pull-llava   # llava-Modell laden
 make status       # Was läuft gerade?
-make rebuild      # Image neu bauen
-make clean        # Aufräumen
 make help         # Alle Befehle anzeigen
 ```
 
 ---
 
-## Automatisch starten nach Pi-Neustart
-
-Docker Compose startet automatisch neu dank `restart: unless-stopped` in der `docker-compose.yml`. Kein systemd-Service nötig.
+## Vollständiges Pi-Setup (einmaliges Setup-Script)
 
 ```bash
-# Test: Pi neu starten und prüfen ob App läuft
-sudo reboot
-# nach ~60s:
-curl http://localhost:3000
+git clone https://github.com/nicolasasauer/belegscanner-web.git
+cd belegscanner-web
+chmod +x scripts/setup-pi.sh && ./scripts/setup-pi.sh
+make up
 ```
 
 ---
 
 ## Troubleshooting
 
-**App startet nicht:**
+**Setup-Wizard erscheint nicht:**
 ```bash
-make logs          # Fehlermeldungen anzeigen
-docker ps -a       # Container-Status prüfen
+# Container-Logs prüfen
+make logs
+# Browser-Cache leeren oder anderen Browser versuchen
 ```
 
-**Supabase-Fehler:**
+**Supabase-Verbindung schlägt fehl:**
+- URL muss mit `https://` beginnen und auf `.supabase.co` enden
+- Anon Key = `anon public` (nicht `service_role`!)
+
+**Nach Neustart nicht erreichbar:**
 ```bash
-# .env.docker prüfen
-cat .env.docker | grep SUPABASE
+docker ps -a   # läuft der Container?
+docker compose up -d   # falls nicht
 ```
 
-**Ollama-Modell fehlt:**
+**Einstellungen zurücksetzen:**
 ```bash
-make pull-llava    # Modell neu laden
-docker exec belegscanner-ollama ollama list   # Geladene Modelle
+rm -f data/config.json
+make restart
+# → Setup-Wizard erscheint erneut
 ```
 
-**Port 3000 belegt:**
+**Image manuell bauen (statt GHCR):**
 ```bash
-# In .env.docker: PORT=3001 setzen
-make down && make up
-```
-
-**Image neu bauen nach Code-Änderungen:**
-```bash
-git pull
-make rebuild
+make build
 make up
 ```

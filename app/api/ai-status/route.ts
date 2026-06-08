@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAiConfig } from '@/lib/services/ai'
 
 export async function GET() {
-  const config = getAiConfig()
+  const config = await getAiConfig()
 
   let status: 'ok' | 'error' | 'unconfigured' = 'unconfigured'
   let error: string | undefined

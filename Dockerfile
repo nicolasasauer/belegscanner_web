@@ -15,9 +15,9 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Dummy env vars so `next build` doesn't fail on missing NEXT_PUBLIC_ vars
-ARG NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder_key
+# Placeholder — echte Werte kommen zur Laufzeit aus /app/data/config.json (Setup-Wizard)
+ARG NEXT_PUBLIC_SUPABASE_URL=https://not-configured.supabase.co
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=not-configured
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
