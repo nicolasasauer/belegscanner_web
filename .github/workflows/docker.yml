@@ -32,8 +32,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          # Nutzt GHCR_TOKEN (PAT) wenn vorhanden, sonst GITHUB_TOKEN als Fallback
-          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Image-Tags & Labels berechnen
         id: meta
