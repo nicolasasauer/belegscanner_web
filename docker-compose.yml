@@ -3,9 +3,6 @@ services:
   # ── Next.js Web-App ────────────────────────────────────────────────────────────
   web:
     image: ${BELEGSCANNER_IMAGE:-ghcr.io/nicolasasauer/belegscanner-web:latest}
-    build:
-      context: .
-      dockerfile: Dockerfile
     container_name: belegscanner-web
     restart: unless-stopped
     ports:

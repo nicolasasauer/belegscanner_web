@@ -29,12 +29,12 @@ update:      ## Neuestes GHCR-Image holen und neu starten
 	docker compose up -d web
 	@echo "✓ App auf neuestem Stand"
 
-# ── Build ──────────────────────────────────────────────────────────
+# ── Build (lokal, braucht Dockerfile im Repo) ──────────────────────
 build:       ## Docker-Image lokal bauen
-	docker compose build web
+	docker compose -f docker-compose.yml -f docker-compose.build.yml build web
 
 rebuild:     ## Image neu bauen (ohne Cache)
-	docker compose build --no-cache web
+	docker compose -f docker-compose.yml -f docker-compose.build.yml build --no-cache web
 
 # ── Ollama ─────────────────────────────────────────────────────────
 pull-model:  ## Ollama-Modell herunterladen (Standard: llava)

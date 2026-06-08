@@ -1,0 +1,8 @@
+# Lokales Build-Override — nur für Entwicklung nötig
+# Verwendung: docker compose -f docker-compose.yml -f docker-compose.build.yml up -d
+# Oder einfach: make build && make up
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
