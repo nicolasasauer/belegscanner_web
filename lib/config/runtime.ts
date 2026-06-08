@@ -37,13 +37,15 @@ function fromEnv(): RuntimeConfig {
 
 export async function getRuntimeConfig(): Promise<RuntimeConfig> {
   if (_cache) return _cache
+  let result: RuntimeConfig
   try {
     const raw = await fs.readFile(CONFIG_PATH, 'utf-8')
-    _cache = { ...fromEnv(), ...JSON.parse(raw) }
+    result = { ...fromEnv(), ...JSON.parse(raw) }
   } catch {
-    _cache = fromEnv()
+    result = fromEnv()
   }
-  return _cache
+  _cache = result
+  return result
 }
 
 export async function saveRuntimeConfig(
