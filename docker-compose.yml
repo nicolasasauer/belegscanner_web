@@ -11,7 +11,7 @@ services:
       # Config + Daten persistent speichern (Supabase-Credentials, AI-Einstellungen)
       - ./data:/app/data
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/setup"]
       interval: 30s
       timeout: 10s
       retries: 3
