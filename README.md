@@ -41,6 +41,40 @@ npm run dev
 
 ---
 
+## Docker Deployment
+
+Das offizielle Docker Image wird automatisch bei jedem Push zu `main` gebaut und zu GHCR gepusht. Es unterstützt **linux/amd64** und **linux/arm64** (Raspberry Pi).
+
+### Image holen & starten
+
+```bash
+# 1. Image pullen
+docker pull ghcr.io/nicolasasauer/belegscanner-web:latest
+
+# 2. Umgebungsvariablen konfigurieren
+cp .env.docker.example .env.docker
+nano .env.docker   # Supabase-Werte + KI-Provider eintragen
+
+# 3. Starten
+docker compose up -d
+```
+
+App läuft auf [http://localhost:3000](http://localhost:3000).
+
+Vollständige Anleitung (Raspberry Pi, Ollama, Tailscale): [DEPLOY.md](DEPLOY.md)
+
+### Verfügbare Image-Tags
+
+| Tag | Beschreibung |
+|-----|-------------|
+| `latest` | Letzter stabiler Build von `main` |
+| `main` | Branch `main` |
+| `develop` | Branch `develop` (Vorschau) |
+| `v1.0.0` | Bestimmte Release-Version |
+| `pr-123` | Pull Request Build (zum Testen) |
+
+---
+
 ## KI-Provider konfigurieren
 
 Wähle **einen** der folgenden Provider und trage ihn in `.env.local` ein:

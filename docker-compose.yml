@@ -1,0 +1,61 @@
+services:
+
+  # ── Next.js Web-App ────────────────────────────────────────────────────────────
+  web:
+    image: ${BELEGSCANNER_IMAGE:-ghcr.io/nicolasasauer/belegscanner-web:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: belegscanner-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - .env.docker
+    environment:
+      NODE_ENV: production
+      # Falls Ollama-Profil aktiv ist, zeigt die App automatisch auf den Container
+      AI_BASE_URL: ${AI_BASE_URL:-http://ollama:11434}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - belegscanner
+
+  # ── Ollama (lokale KI) ─────────────────────────────────────────────────────────
+  # Starten mit: docker compose --profile ai up
+  ollama:
+    image: ollama/ollama:latest
+    container_name: belegscanner-ollama
+    restart: unless-stopped
+    profiles:
+      - ai
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - belegscanner
+    # Für Raspberry Pi mit GPU-Support auskommentieren:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
+
+volumes:
+  ollama_data:
+    name: belegscanner-ollama-models
+
+networks:
+  belegscanner:
+    driver: bridge
