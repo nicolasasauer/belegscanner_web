@@ -24,6 +24,9 @@ jobs:
   build:
     name: Build ${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +50,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT || github.token }}
+          password: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata
         id: meta
@@ -98,6 +101,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
     needs: build
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Download digests
@@ -115,7 +121,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata
         id: meta
@@ -138,5 +144,4 @@ jobs:
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
