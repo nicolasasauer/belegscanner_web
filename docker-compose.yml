@@ -2,7 +2,7 @@ services:
 
   # ── Next.js Web-App ────────────────────────────────────────────────────────────
   web:
-    image: ${BELEGSCANNER_IMAGE:-ghcr.io/nicolasasauer-privat/belegscanner_web:latest}
+    image: ${BELEGSCANNER_IMAGE:-ghcr.io/nicolasasauer/belegscanner_web:latest}
     container_name: belegscanner-web
     restart: unless-stopped
     ports:
