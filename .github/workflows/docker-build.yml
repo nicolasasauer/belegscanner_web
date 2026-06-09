@@ -18,7 +18,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: nicolasasauer/belegscanner-web
+  IMAGE_NAME: nicolasasauer-privat/belegscanner_web
 
 jobs:
   build:
