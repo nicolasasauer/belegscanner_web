@@ -11,6 +11,10 @@ services:
       # JWT-Signing-Secret für Auth — bitte mit eigenem Wert überschreiben:
       # echo "AUTH_SECRET=$(openssl rand -base64 32)" >> .env
       AUTH_SECRET: ${AUTH_SECRET:-bitte-aendern-fuer-sicherheit-mindestens-32-zeichen}
+      # Bearer-Token für die Mobile-App-API (Sync/Upload). Ohne diesen Wert
+      # antwortet /api/receipts mit 401 und die Mobile-App kann nicht syncen:
+      # echo "MOBILE_API_TOKEN=$(openssl rand -hex 24)" >> .env
+      MOBILE_API_TOKEN: ${MOBILE_API_TOKEN:-}
     volumes:
       # Datenbank + Uploads + Config persistent speichern
       - ./data:/app/data
