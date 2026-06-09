@@ -38,7 +38,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # better-sqlite3 native binary explizit kopieren (wird vom File-Tracer nicht immer erkannt)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
-USER nextjs
+# su-exec: Entrypoint läuft als root (um Bind-Mount-Rechte zu fixen) und
+# wechselt dann zum unprivilegierten nextjs-User
+RUN apk add --no-cache su-exec
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3000
 ENV PORT=3000
@@ -47,4 +51,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/setup || exit 1
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server.js"]

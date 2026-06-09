@@ -1,0 +1,2 @@
+# Shell-Skripte brauchen LF (werden in Linux-Container kopiert)
+*.sh text eol=lf
