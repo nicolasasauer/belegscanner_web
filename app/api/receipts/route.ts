@@ -6,7 +6,7 @@ import type { FilterParams } from '@/types'
 
 const insertSchema = z.object({
   title:       z.string().min(1),
-  amount:      z.number().positive(),
+  amount:      z.number().nonnegative(), // 0.0 erlaubt (Mobile sendet 0 wenn kein Betrag)
   currency:    z.string().default('EUR'),
   date:        z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   category:    z.enum(['food','transport','shopping','entertainment','health','utilities','housing','education','travel','other']),
