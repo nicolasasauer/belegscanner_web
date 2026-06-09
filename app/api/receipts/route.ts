@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { resolveApiUser } from '@/lib/mobile-auth'
 import { getReceipts, createReceipt } from '@/lib/services/receipts'
 import { z } from 'zod'
 import type { FilterParams } from '@/types'
@@ -19,11 +19,11 @@ const insertSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await resolveApiUser(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
-  const result = await getReceipts(session.user.id, {
+  const result = await getReceipts(user.id, {
     page:     Number(searchParams.get('page')     ?? 1),
     pageSize: Number(searchParams.get('pageSize') ?? 20),
     category: (searchParams.get('category') ?? undefined) as FilterParams['category'],
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await resolveApiUser(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body   = await request.json()
   const parsed = insertSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const receipt = await createReceipt(session.user.id, parsed.data)
+  const receipt = await createReceipt(user.id, parsed.data)
   return NextResponse.json(receipt, { status: 201 })
 }

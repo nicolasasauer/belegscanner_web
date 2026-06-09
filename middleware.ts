@@ -16,6 +16,12 @@ export default auth((req) => {
     return NextResponse.next()
   }
 
+  // API-Routen verwalten ihre eigene Auth (Bearer-Token für Mobile-App)
+  // Kein Redirect auf /login — Route-Handler gibt 401 zurück
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next()
+  }
+
   // Prüfen ob Setup abgeschlossen (Cookie gesetzt durch POST /api/setup)
   const isSetupDone = req.cookies.get('bs_setup')?.value === '1'
   if (!isSetupDone) {

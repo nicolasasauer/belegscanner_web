@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { resolveApiUser } from '@/lib/mobile-auth'
 import { callAi, extractJson } from '@/lib/services/ai'
 import { ITEM_CATEGORIES } from '@/lib/utils/item-categories'
 import type { OcrResult } from '@/types'
 
 export async function POST(request: NextRequest) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await resolveApiUser(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const formData = await request.formData()
   const image    = formData.get('image') as File | null
