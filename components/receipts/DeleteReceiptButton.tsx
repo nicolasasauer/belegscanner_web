@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, Loader2 } from 'lucide-react'
-import { deleteReceipt } from '@/lib/services/receipts'
 
 export function DeleteReceiptButton({ id }: { id: string }) {
   const [loading, setLoading] = useState(false)
@@ -13,7 +12,8 @@ export function DeleteReceiptButton({ id }: { id: string }) {
     if (!confirm('Beleg wirklich löschen?')) return
     setLoading(true)
     try {
-      await deleteReceipt(id)
+      const res = await fetch(`/api/receipts/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
       router.push('/dashboard/receipts')
       router.refresh()
     } catch {

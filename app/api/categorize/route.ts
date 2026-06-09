@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { callAi, extractJson } from '@/lib/services/ai'
 import { ITEM_CATEGORIES } from '@/lib/utils/item-categories'
 import type { ReceiptItem, ItemCategory } from '@/types'
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { items }: { items: ReceiptItem[] } = await request.json()
   if (!items?.length) return NextResponse.json({ items: [] })
@@ -26,7 +25,7 @@ Antworte NUR mit JSON-Array (gleiche Reihenfolge wie oben):
 [{"name":"Artikelname","category":"kategorie"}]`
 
   try {
-    const rawText = await callAi(prompt)
+    const rawText    = await callAi(prompt)
     const categorized = extractJson<Array<{ name: string; category: ItemCategory }>>(rawText) ?? []
 
     const result: ReceiptItem[] = items.map((item, i) => ({
@@ -37,6 +36,6 @@ Antworte NUR mit JSON-Array (gleiche Reihenfolge wie oben):
     return NextResponse.json({ items: result })
   } catch (err) {
     console.error('Categorize error:', err)
-    return NextResponse.json({ items }, { status: 200 })
+    return NextResponse.json({ items })
   }
 }

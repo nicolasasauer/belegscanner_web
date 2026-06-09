@@ -2,28 +2,28 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
+  const router  = useRouter()
+  const [email, setEmail]     = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [isSignUp, setIsSignUp] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
-    const supabase = createClient()
 
-    const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password })
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    })
 
-    if (error) {
-      setError(error.message)
+    if (result?.error) {
+      setError('E-Mail oder Passwort falsch.')
     } else {
       router.push('/dashboard')
       router.refresh()
@@ -36,9 +36,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm bg-white rounded-xl shadow p-8 space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold">Belegscanner</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {isSignUp ? 'Konto erstellen' : 'Anmelden'}
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Anmelden</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,16 +68,9 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-gray-900 text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Laden...' : isSignUp ? 'Registrieren' : 'Anmelden'}
+            {loading ? 'Laden...' : 'Anmelden'}
           </button>
         </form>
-
-        <button
-          onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full text-sm text-gray-500 hover:text-gray-900"
-        >
-          {isSignUp ? 'Bereits ein Konto? Anmelden' : 'Neu hier? Konto erstellen'}
-        </button>
       </div>
     </div>
   )

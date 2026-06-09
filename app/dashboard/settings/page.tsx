@@ -1,9 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { AiStatusPanel } from '@/components/settings/AiStatusPanel'
 
 export default async function SettingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await auth()
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -16,7 +15,7 @@ export default async function SettingsPage() {
         <h2 className="text-sm font-semibold text-gray-700">Konto</h2>
         <div>
           <label className="text-xs font-medium text-gray-500">E-Mail</label>
-          <p className="text-sm text-gray-900 mt-0.5">{user?.email}</p>
+          <p className="text-sm text-gray-900 mt-0.5">{session?.user?.email}</p>
         </div>
       </div>
 

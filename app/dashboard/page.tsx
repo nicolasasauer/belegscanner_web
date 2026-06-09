@@ -1,19 +1,18 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
 import { getUserStats } from '@/lib/services/stats'
 import { StatsCards } from '@/components/dashboard/StatsCards'
 import { CategoryChart } from '@/components/dashboard/CategoryChart'
 import { MonthlyChart } from '@/components/dashboard/MonthlyChart'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await auth()
 
   let stats = null
-  if (user) {
+  if (session?.user) {
     try {
-      stats = await getUserStats()
+      stats = await getUserStats(session.user.id)
     } catch {
-      // Stats will render empty state
+      // Stats werden als leerer Zustand gerendert
     }
   }
 

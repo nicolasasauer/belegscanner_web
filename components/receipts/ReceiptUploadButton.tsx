@@ -3,10 +3,18 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, X, Upload, Loader2, Tag } from 'lucide-react'
-import { createReceipt, uploadReceiptImage } from '@/lib/services/receipts'
 import { CATEGORIES, CATEGORY_LABELS } from '@/lib/utils/categories'
 import { ITEM_CATEGORY_LABELS, ITEM_CATEGORY_COLORS } from '@/lib/utils/item-categories'
 import type { OcrResult, Category, ReceiptItem } from '@/types'
+
+async function uploadReceiptImage(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await fetch('/api/upload', { method: 'POST', body: formData })
+  if (!res.ok) throw new Error('Upload fehlgeschlagen')
+  const { url } = await res.json()
+  return url as string
+}
 
 export function ReceiptUploadButton() {
   const [open, setOpen] = useState(false)
@@ -46,9 +54,9 @@ export function ReceiptUploadButton() {
         setOcr(data)
         setForm(prev => ({
           ...prev,
-          title: data.title ?? prev.title,
+          title:  data.title  ?? prev.title,
           amount: data.amount?.toString() ?? prev.amount,
-          date: data.date ?? prev.date,
+          date:   data.date   ?? prev.date,
           vendor: data.vendor ?? prev.vendor,
         }))
         if (data.items?.length) setItems(data.items)
@@ -67,16 +75,21 @@ export function ReceiptUploadButton() {
       let image_url: string | undefined
       if (file) image_url = await uploadReceiptImage(file)
 
-      await createReceipt({
-        title: form.title,
-        amount: parseFloat(form.amount),
-        date: form.date,
-        category: form.category,
-        vendor: form.vendor || undefined,
-        image_url,
-        raw_text: ocr?.raw_text,
-        items: items.length ? items : undefined,
+      const res = await fetch('/api/receipts', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:    form.title,
+          amount:   parseFloat(form.amount),
+          date:     form.date,
+          category: form.category,
+          vendor:   form.vendor || undefined,
+          image_url,
+          raw_text: ocr?.raw_text,
+          items:    items.length ? items : undefined,
+        }),
       })
+      if (!res.ok) throw new Error('Speichern fehlgeschlagen')
 
       setOpen(false)
       resetForm()
@@ -147,7 +160,6 @@ export function ReceiptUploadButton() {
                 className="hidden"
               />
 
-              {/* Detected Items */}
               {items.length > 0 && (
                 <div className="border border-gray-100 rounded-xl p-4 bg-gray-50">
                   <div className="flex items-center gap-1.5 mb-3">
@@ -158,12 +170,8 @@ export function ReceiptUploadButton() {
                   </div>
                   <div className="space-y-1.5 max-h-48 overflow-y-auto">
                     {items.map((item, i) => {
-                      const color = item.category
-                        ? ITEM_CATEGORY_COLORS[item.category]
-                        : '#94a3b8'
-                      const label = item.category
-                        ? ITEM_CATEGORY_LABELS[item.category]
-                        : 'Sonstiges'
+                      const color = item.category ? ITEM_CATEGORY_COLORS[item.category] : '#94a3b8'
+                      const label = item.category ? ITEM_CATEGORY_LABELS[item.category] : 'Sonstiges'
                       return (
                         <div key={i} className="flex items-center justify-between text-xs">
                           <span className="text-gray-700 truncate flex-1 mr-2">{item.name}</span>

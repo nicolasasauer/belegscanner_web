@@ -7,8 +7,12 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
+    environment:
+      # JWT-Signing-Secret für Auth — bitte mit eigenem Wert überschreiben:
+      # echo "AUTH_SECRET=$(openssl rand -base64 32)" >> .env
+      AUTH_SECRET: ${AUTH_SECRET:-bitte-aendern-fuer-sicherheit-mindestens-32-zeichen}
     volumes:
-      # Config + Daten persistent speichern (Supabase-Credentials, AI-Einstellungen)
+      # Datenbank + Uploads + Config persistent speichern
       - ./data:/app/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/setup"]

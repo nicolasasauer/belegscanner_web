@@ -1,51 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { getReceiptById, updateReceipt, deleteReceipt } from '@/lib/services/receipts'
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data, error } = await supabase
-    .from('receipts')
-    .select('*')
-    .eq('id', params.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (error) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json(data)
+  const receipt = await getReceiptById(params.id, session.user.id)
+  if (!receipt) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  return NextResponse.json(receipt)
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { data, error } = await supabase
-    .from('receipts')
-    .update({ ...body, updated_at: new Date().toISOString() })
-    .eq('id', params.id)
-    .eq('user_id', user.id)
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  const receipt = await updateReceipt({ id: params.id, ...body }, session.user.id)
+  return NextResponse.json(receipt)
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { error } = await supabase
-    .from('receipts')
-    .delete()
-    .eq('id', params.id)
-    .eq('user_id', user.id)
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await deleteReceipt(params.id, session.user.id)
   return new NextResponse(null, { status: 204 })
 }

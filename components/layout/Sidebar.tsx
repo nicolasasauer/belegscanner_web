@@ -3,25 +3,17 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Receipt, Settings, LogOut } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils/cn'
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/receipts', label: 'Belege', icon: Receipt },
+  { href: '/dashboard',          label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/dashboard/receipts', label: 'Belege',       icon: Receipt },
   { href: '/dashboard/settings', label: 'Einstellungen', icon: Settings },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-
-  async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
 
   return (
     <aside className="hidden md:flex flex-col w-56 bg-white border-r border-gray-200 py-6">
@@ -49,7 +41,7 @@ export function Sidebar() {
 
       <div className="px-3 mt-auto">
         <button
-          onClick={handleSignOut}
+          onClick={() => signOut({ callbackUrl: '/login' })}
           className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 w-full transition-colors"
         >
           <LogOut size={16} />

@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { getReceipts } from '@/lib/services/receipts'
 import { ReceiptList } from '@/components/receipts/ReceiptList'
 import { ReceiptUploadButton } from '@/components/receipts/ReceiptUploadButton'
 import { ExportButtons } from '@/components/receipts/ExportButtons'
@@ -9,36 +10,26 @@ interface PageProps {
 }
 
 export default async function ReceiptsPage({ searchParams }: PageProps) {
-  const supabase = await createClient()
+  const session = await auth()
+  if (!session?.user) return null
 
   const filters: FilterParams = {
-    page: Number(searchParams.page ?? 1),
+    page:     Number(searchParams.page ?? 1),
     pageSize: 20,
     category: searchParams.category as FilterParams['category'],
     dateFrom: searchParams.dateFrom as string,
-    dateTo: searchParams.dateTo as string,
-    search: searchParams.search as string,
+    dateTo:   searchParams.dateTo   as string,
+    search:   searchParams.search   as string,
   }
 
-  let query = supabase
-    .from('receipts')
-    .select('*', { count: 'exact' })
-    .order('date', { ascending: false })
-    .range(((filters.page ?? 1) - 1) * 20, (filters.page ?? 1) * 20 - 1)
-
-  if (filters.category) query = query.eq('category', filters.category)
-  if (filters.dateFrom) query = query.gte('date', filters.dateFrom)
-  if (filters.dateTo) query = query.lte('date', filters.dateTo)
-  if (filters.search) query = query.or(`title.ilike.%${filters.search}%,vendor.ilike.%${filters.search}%`)
-
-  const { data, count } = await query
+  const { data, count } = await getReceipts(session.user.id, filters)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Belege</h1>
-          <p className="text-sm text-gray-500 mt-1">{count ?? 0} Belege insgesamt</p>
+          <p className="text-sm text-gray-500 mt-1">{count} Belege insgesamt</p>
         </div>
         <div className="flex gap-2">
           <ExportButtons />
@@ -47,8 +38,8 @@ export default async function ReceiptsPage({ searchParams }: PageProps) {
       </div>
 
       <ReceiptList
-        receipts={data ?? []}
-        totalCount={count ?? 0}
+        receipts={data}
+        totalCount={count}
         currentPage={filters.page ?? 1}
         pageSize={20}
       />

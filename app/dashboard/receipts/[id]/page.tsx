@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/auth'
+import { getReceiptById } from '@/lib/services/receipts'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -28,14 +29,11 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 }
 
 export default async function ReceiptDetailPage({ params }: Props) {
-  const supabase = await createClient()
-  const { data: receipt, error } = await supabase
-    .from('receipts')
-    .select('*')
-    .eq('id', params.id)
-    .single()
+  const session = await auth()
+  if (!session?.user) return null
 
-  if (error || !receipt) notFound()
+  const receipt = await getReceiptById(params.id, session.user.id)
+  if (!receipt) notFound()
 
   const r = receipt as Receipt
   const categoryColor = CATEGORY_COLORS[r.category]
@@ -74,9 +72,9 @@ export default async function ReceiptDetailPage({ params }: Props) {
         </div>
 
         <dl className="grid grid-cols-2 gap-4">
-          <Field label="Händler" value={r.vendor} />
+          <Field label="Händler"      value={r.vendor} />
           <Field label="Beschreibung" value={r.description} />
-          <Field label="Erstellt am" value={format(parseISO(r.created_at), 'd. MMM yyyy', { locale: de })} />
+          <Field label="Erstellt am"  value={format(parseISO(r.created_at), 'd. MMM yyyy', { locale: de })} />
           {r.tags?.length > 0 && (
             <div>
               <dt className="text-xs font-medium text-gray-500">Tags</dt>

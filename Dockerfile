@@ -15,12 +15,6 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Placeholder — echte Werte kommen zur Laufzeit aus /app/data/config.json (Setup-Wizard)
-ARG NEXT_PUBLIC_SUPABASE_URL=https://not-configured.supabase.co
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=not-configured
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-
 RUN npm run build
 
 # ── Stage 3: Production runtime ─────────────────────────────────────────────────
@@ -39,6 +33,9 @@ RUN mkdir .next && chown nextjs:nodejs .next
 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# better-sqlite3 native binary explizit kopieren (wird vom File-Tracer nicht immer erkannt)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
 USER nextjs
 

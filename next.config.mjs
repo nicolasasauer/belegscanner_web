@@ -2,17 +2,11 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/**',
-      },
-    ],
+    // Bilder werden lokal via /api/uploads/ serviert — keine externen Domains nötig
+    unoptimized: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ['sharp'],
+    serverComponentsExternalPackages: ['sharp', 'better-sqlite3'],
   },
 }
 
