@@ -1,48 +1,42 @@
-name: Build & Push Docker Image
+name: Build and Push Docker Image
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: QEMU einrichten (für ARM64-Cross-Compile)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Docker Buildx einrichten
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Bei Docker Hub anmelden
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Image-Tags berechnen
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/belegscanner-web
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=semver,pattern={{version}}
-            type=sha,prefix=sha-
-
-      - name: Build & Push (amd64 + arm64)
-        uses: docker/build-push-action@v5
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
