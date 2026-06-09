@@ -6,6 +6,8 @@ import type { NextAuthConfig } from 'next-auth'
 
 export default {
   secret: process.env.AUTH_SECRET ?? 'bitte-aendern-mindestens-32-zeichen-lang-xyz',
+  // Nötig für Docker/Reverse-Proxy: vertraut dem Host-Header
+  trustHost: true,
   providers: [], // Credentials-Provider wird in auth.ts hinzugefügt (Node.js only)
   pages: {
     signIn: '/login',

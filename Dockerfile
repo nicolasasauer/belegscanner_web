@@ -1,6 +1,7 @@
 # ── Stage 1: Install dependencies ──────────────────────────────────────────────
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+# libc6-compat für Node addons; python3 + make + g++ für better-sqlite3 native build
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 COPY package.json package-lock.json* ./

@@ -1,225 +1,141 @@
 # Belegscanner Web
 
-Web-Version der Belegscanner App — läuft auf Desktop + Mobile im Browser.
+Selfhosted Beleg-Scanner für den Raspberry Pi (oder jeden anderen Linux-Server).  
+Läuft komplett lokal — kein Cloud-Konto, kein Supabase, kein externes Abo nötig.
 
 ## Features
 
-- Foto-Upload oder Kamera-Input
-- KI-gestützte OCR: Beleg-Daten + Artikel-Liste automatisch extrahieren
-- Artikel-Kategorisierung (Lebensmittel, Kosmetik, Haushalt, …)
-- 5 KI-Provider: Ollama, LM Studio (lokal), Claude, Mistral, Gemini (Cloud)
-- Statistiken & Charts
-- Export als JSON oder CSV
-- Supabase-Sync (PostgreSQL + Auth + Storage)
-- Responsive Design
+- 📷 Foto-Upload oder Kamera-Input (Mobile)
+- 🤖 KI-gestützte OCR: Betrag, Datum, Händler + Artikel automatisch extrahieren
+- 🏷️ Artikel-Kategorisierung (Lebensmittel, Kosmetik, Haushalt, …)
+- 📊 Statistiken & Charts (Ausgaben pro Monat/Kategorie)
+- 📤 Export als JSON oder CSV
+- 🔒 Lokale Auth (E-Mail + Passwort, kein Cloud-Service)
+- 🗄️ SQLite-Datenbank (eine Datei im Docker Volume)
+- 🖼️ Bilder lokal gespeichert (kein S3, kein Supabase Storage)
 
 ---
 
-## Schnellstart
+## Schnellstart — Raspberry Pi (empfohlen)
 
-### 1. Abhängigkeiten installieren
+```bash
+# 1. Repository klonen (nur docker-compose.yml wird gebraucht)
+git clone https://github.com/nicolasasauer/belegscanner_web.git
+cd belegscanner_web
+
+# 2. (Optional) Eigenen Auth-Secret setzen — empfohlen für Sicherheit
+echo "AUTH_SECRET=$(openssl rand -base64 32)" > .env
+
+# 3. Container starten (Image wird automatisch von GHCR gezogen)
+docker compose up -d
+
+# 4. Browser öffnen → http://<raspberry-pi-ip>:3000
+#    → Setup-Wizard öffnet sich automatisch
+#    → E-Mail + Passwort für deinen Account eingeben
+#    → KI-Provider konfigurieren (optional)
+#    → Fertig!
+```
+
+Das war's. Kein .env.local, kein Supabase, kein API-Key Pflicht.
+
+---
+
+## Mit lokalem KI (Ollama, empfohlen für Pi)
+
+```bash
+# Ollama-Container mitстарten:
+docker compose --profile ai up -d
+
+# Vision-Modell laden (einmalig, ~4 GB):
+docker exec belegscanner-ollama ollama pull llava
+
+# Im Setup-Wizard:
+# Provider: Ollama
+# Base URL: http://ollama:11434   ← funktioniert im Docker-Netzwerk
+```
+
+---
+
+## Datenspeicherung
+
+Alle Daten liegen im `./data/`-Verzeichnis neben der `docker-compose.yml`:
+
+```
+data/
+  receipts.db      ← SQLite-Datenbank (Belege, Nutzerkonten)
+  uploads/         ← Belegfotos
+  config.json      ← KI-Einstellungen (Provider, Modell, Key)
+```
+
+**Backup** — einfach den `data/`-Ordner kopieren.
+
+---
+
+## Lokale Entwicklung
 
 ```bash
 npm install
-```
-
-### 2. Umgebungsvariablen einrichten
-
-```bash
-cp .env.local.example .env.local
-```
-
-Datei öffnen und ausfüllen (siehe Abschnitt „KI-Provider konfigurieren").
-
-### 3. App starten
-
-```bash
 npm run dev
 ```
 
-Öffne [http://localhost:3000](http://localhost:3000)
+Öffne [http://localhost:3000](http://localhost:3000) — der Setup-Wizard führt dich durch die Einrichtung.
+
+### Mit lokalem Docker-Build testen
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
 
 ---
 
-## Docker Deployment
+## KI-Provider
 
-Das offizielle Docker Image wird automatisch bei jedem Push zu `main` gebaut und zu GHCR gepusht. Es unterstützt **linux/amd64** und **linux/arm64** (Raspberry Pi).
+Wähle im Setup-Wizard einen der folgenden Anbieter:
 
-### Image holen & starten
+| Provider | Typ | Empfehlung |
+|----------|-----|------------|
+| **Ollama** | Lokal | ✅ Für Pi — kostenlos, kein API-Key |
+| **LM Studio** | Lokal | PC/Mac — grafische Oberfläche |
+| **Claude** (Anthropic) | Cloud | Genaueste OCR, kostenpflichtig |
+| **Mistral** | Cloud | Vision via Pixtral |
+| **Gemini** (Google) | Cloud | Großzügiges Free-Tier |
 
-```bash
-# 1. Image pullen
-docker pull ghcr.io/nicolasasauer/belegscanner-web:latest
+Den Provider kannst du jederzeit im Setup-Wizard unter `/setup` ändern.
 
-# 2. Umgebungsvariablen konfigurieren
-cp .env.docker.example .env.docker
-nano .env.docker   # Supabase-Werte + KI-Provider eintragen
+---
 
-# 3. Starten
-docker compose up -d
-```
+## Docker Image
 
-App läuft auf [http://localhost:3000](http://localhost:3000).
-
-Vollständige Anleitung (Raspberry Pi, Ollama, Tailscale): [DEPLOY.md](DEPLOY.md)
-
-### Verfügbare Image-Tags
+Das Image wird bei jedem Push zu `main` automatisch gebaut (GitHub Actions) und auf GHCR veröffentlicht:
 
 | Tag | Beschreibung |
 |-----|-------------|
-| `latest` | Letzter stabiler Build von `main` |
+| `latest` | Letzter stabiler Build (`main`) |
 | `main` | Branch `main` |
-| `develop` | Branch `develop` (Vorschau) |
-| `v1.0.0` | Bestimmte Release-Version |
-| `pr-123` | Pull Request Build (zum Testen) |
+| `develop` | Vorschau-Branch |
+| `v1.0.0` | Release-Tag |
+
+Unterstützte Architekturen: **linux/amd64** + **linux/arm64** (Raspberry Pi 4/5)
 
 ---
 
-## KI-Provider konfigurieren
+## docker-compose.yml — Wichtige Optionen
 
-Wähle **einen** der folgenden Provider und trage ihn in `.env.local` ein:
-
-### Option A — Ollama (lokal, empfohlen)
-
-Kostenlos, läuft komplett lokal, keine API-Key nötig.
-
-**1. Ollama installieren:**
+```yaml
+environment:
+  AUTH_SECRET: ${AUTH_SECRET:-...}   # Override via .env-Datei neben docker-compose.yml
+  PORT: 3000                          # Anderen Port: PORT=8080 docker compose up -d
 ```
-https://ollama.com/download
-```
-
-**2. Vision-Modell herunterladen** (wähle eines):
-```bash
-ollama pull llava              # Standard, gut für OCR
-ollama pull llama3.2-vision    # Neuer, genauer
-ollama pull moondream          # Klein & schnell
-```
-
-**3. `.env.local` konfigurieren:**
-```env
-AI_PROVIDER=ollama
-AI_MODEL=llava
-```
-
-Ollama startet automatisch im Hintergrund. Fertig.
-
----
-
-### Option B — LM Studio (lokal)
-
-Kostenlos, grafische Oberfläche, OpenAI-kompatibel.
-
-**1. LM Studio installieren:**
-```
-https://lmstudio.ai
-```
-
-**2. Modell laden:**
-- Unter „Discover" ein Vision-Modell suchen (z. B. LLaVA)
-- Modell herunterladen und laden
-
-**3. Local Server starten:**
-- Tab „Local Server" öffnen
-- „Start Server" klicken (Port 1234)
-
-**4. `.env.local` konfigurieren:**
-```env
-AI_PROVIDER=lmstudio
-AI_MODEL=loaded-model
-```
-
----
-
-### Option C — Anthropic Claude (Cloud)
-
-Sehr genaue Vision + OCR. Kostenpflichtig (günstiges Haiku-Modell empfohlen).
-
-**1. API-Key holen:**
-```
-https://console.anthropic.com
-```
-
-**2. `.env.local` konfigurieren:**
-```env
-AI_PROVIDER=claude
-AI_MODEL=claude-haiku-4-5-20251001
-AI_API_KEY=sk-ant-...
-```
-
----
-
-### Option D — Mistral AI (Cloud)
-
-Vision via Pixtral-Modell.
-
-**1. API-Key holen:**
-```
-https://console.mistral.ai
-```
-
-**2. `.env.local` konfigurieren:**
-```env
-AI_PROVIDER=mistral
-AI_MODEL=pixtral-12b-2409
-AI_API_KEY=...
-```
-
----
-
-### Option E — Google Gemini (Cloud)
-
-Großzügiges Free-Tier, sehr schnell.
-
-**1. API-Key holen:**
-```
-https://aistudio.google.com/app/apikey
-```
-
-**2. `.env.local` konfigurieren:**
-```env
-AI_PROVIDER=gemini
-AI_MODEL=gemini-1.5-flash
-AI_API_KEY=AIza...
-```
-
----
-
-## Supabase einrichten
-
-**1. Projekt anlegen:**
-```
-https://supabase.com/dashboard
-```
-
-**2. SQL ausführen** (Supabase → SQL Editor):
-```
-supabase/migrations/001_initial_schema.sql
-supabase/migrations/002_add_items_column.sql
-```
-
-**3. `.env.local` ausfüllen:**
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-```
-
----
-
-## KI-Status prüfen
-
-Nach dem Start: Dashboard → Einstellungen → „Status prüfen"
-
-Zeigt welcher Provider aktiv ist und ob die Verbindung funktioniert.
 
 ---
 
 ## Tech Stack
 
-- Next.js 14 + TypeScript
-- Supabase (PostgreSQL + Auth + Storage)
-- Tailwind CSS + Radix UI
-- KI: Ollama / LM Studio / Claude / Mistral / Gemini
+- **Next.js 14** + TypeScript
+- **SQLite** (better-sqlite3) + Drizzle ORM
+- **NextAuth.js v5** (Credentials-Provider)
+- **Tailwind CSS** + Radix UI + Recharts
+- **KI:** Ollama / LM Studio / Claude / Mistral / Gemini
 
 ---
 
@@ -228,21 +144,26 @@ Zeigt welcher Provider aktiv ist und ob die Verbindung funktioniert.
 ```
 app/
   api/
-    ocr/           OCR-Endpunkt (Bild → strukturierte Daten)
-    categorize/    Artikel-Kategorisierung
-    ai-status/     Provider-Statuscheck
-  dashboard/
-    receipts/      Belegliste + Detailansicht
-    settings/      KI-Einstellungen
+    auth/          NextAuth-Handler + Registrierung
+    ocr/           OCR-Endpunkt (Bild → JSON)
+    receipts/      CRUD-API
+    upload/        Bild-Upload (→ data/uploads/)
+    uploads/       Bild-Serve-Endpunkt
+    setup/         Setup-Status + Einrichtung
+  dashboard/       Dashboard, Belegliste, Einstellungen
+  login/           Login-Seite
+  setup/           Setup-Wizard
+auth.ts            NextAuth-Konfiguration
 lib/
+  db/
+    schema.ts      Drizzle-Schema (users, receipts)
+    index.ts       SQLite-Verbindung + Tabellenerstellung
   services/
     ai.ts          Multi-Provider KI-Service
-    receipts.ts    Supabase CRUD
-  utils/
-    categories.ts      Beleg-Kategorien
-    item-categories.ts Artikel-Kategorien
+    receipts.ts    Drizzle CRUD
+    stats.ts       Statistiken
+  config/
+    runtime.ts     AI-Config (liest/schreibt data/config.json)
 types/
   index.ts         TypeScript-Typen
-supabase/
-  migrations/      SQL-Migrationen
 ```
