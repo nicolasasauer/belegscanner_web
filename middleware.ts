@@ -7,18 +7,13 @@ const { auth } = NextAuth(authConfig)
 export default auth((req) => {
   const { pathname } = req.nextUrl
 
-  // Setup- und Auth-Routen immer erlauben
+  // Setup- und Auth-Routen + alle API-Routen immer direkt durchlassen.
+  // API-Routen verwalten ihre eigene Auth (NextAuth-Session ODER Bearer-Token
+  // für die Mobile-App). Kein Redirect auf /setup oder /login.
   if (
     pathname.startsWith('/setup') ||
-    pathname.startsWith('/api/setup') ||
-    pathname.startsWith('/api/auth')
+    pathname.startsWith('/api/')
   ) {
-    return NextResponse.next()
-  }
-
-  // API-Routen verwalten ihre eigene Auth (Bearer-Token für Mobile-App)
-  // Kein Redirect auf /login — Route-Handler gibt 401 zurück
-  if (pathname.startsWith('/api/')) {
     return NextResponse.next()
   }
 
