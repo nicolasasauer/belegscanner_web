@@ -69,13 +69,19 @@ export async function POST(request: NextRequest) {
 
   const response = NextResponse.json({ success: true })
 
+  // Secure-Flag nur bei echtem HTTPS: Im LAN (Pi über plain HTTP) verwerfen
+  // Browser Secure-Cookies — außer auf localhost. NODE_ENV taugt hier nicht.
+  const isHttps =
+    request.headers.get('x-forwarded-proto') === 'https' ||
+    request.nextUrl.protocol === 'https:'
+
   // Setup-Cookie setzen → Middleware lässt durch
   response.cookies.set('bs_setup', '1', {
     path:    '/',
     maxAge:  60 * 60 * 24 * 365, // 1 Jahr
     sameSite: 'lax',
     httpOnly: true,
-    secure:  process.env.NODE_ENV === 'production',
+    secure:  isHttps,
   })
 
   return response
