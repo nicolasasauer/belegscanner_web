@@ -50,7 +50,14 @@ export async function callAi(
 }
 
 async function callOllama(config: AiConfig, prompt: string, imageBase64?: string): Promise<string> {
-  const body: Record<string, unknown> = { model: config.model, prompt, stream: false }
+  const body: Record<string, unknown> = {
+    model: config.model,
+    prompt,
+    stream: false,
+    // Deterministische Extraktion — mit Default-Temperature liefert das Modell
+    // mal JSON, mal Prosa, mal fast nichts (beobachtet mit llava beim OCR).
+    options: { temperature: 0 },
+  }
   if (imageBase64) body.images = [imageBase64]
 
   const res = await fetch(`${config.baseUrl}/api/generate`, {
