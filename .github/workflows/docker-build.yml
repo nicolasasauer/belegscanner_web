@@ -23,23 +23,24 @@ env:
 jobs:
   build:
     name: Build ${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-    runs-on: ubuntu-latest
+    # Native Runner pro Architektur — kein QEMU (Next.js/SWC crasht unter
+    # Emulation mit SIGILL, außerdem ~10x schnellerer arm64-Build)
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
